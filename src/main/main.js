@@ -1,4 +1,5 @@
 const { app, BrowserWindow, globalShortcut, Menu, ipcMain } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const Store = require('electron-store');
 
@@ -26,7 +27,7 @@ function createWindow() {
     x: windowBounds.x,
     y: windowBounds.y,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -144,8 +145,9 @@ function createWindow() {
     console.log('Media paused');
   });
 
-  // Inject CSS to hide distracting elements
+  // Inject CSS to hide distracting elements and Inject React Renderer
   mainWindow.webContents.on('did-finish-load', () => {
+    // 1. Inject Distraction-Free CSS (Original)
     mainWindow.webContents.insertCSS(`
       /* Hide Create button */
       #buttons > ytd-button-renderer:nth-child(1) {
@@ -156,20 +158,6 @@ function createWindow() {
       #comments {
         display: none !important;
       }
-      
-      /* Hide related/suggested videos on the right side (optional) */
-      /* Uncomment if you want to hide these as well:
-      #related {
-        display: none !important;
-      }
-      */
-      
-      /* Hide shorts section (optional) */
-      /* Uncomment if you want to hide these as well:
-      ytd-reel-shelf-renderer {
-        display: none !important;
-      }
-      */
       
       /* Hide notifications bell and upload icons in header */
       ytd-topbar-menu-button-renderer {
@@ -184,6 +172,44 @@ function createWindow() {
         }
       }
     `);
+
+    // 2. Inject React App
+    try {
+      // Path to built renderer assets
+      // Note: We are in src/main/, so dist is ../../dist
+      const rendererPath = path.join(__dirname, '../../renderer_dist');
+      const cssPath = path.join(rendererPath, 'assets/index.css');
+      const jsPath = path.join(rendererPath, 'assets/index.js');
+
+      // Inject React CSS
+      if (fs.existsSync(cssPath)) {
+        const css = fs.readFileSync(cssPath, 'utf8');
+        mainWindow.webContents.insertCSS(css);
+        console.log('Injected React CSS');
+      } else {
+        console.warn('React CSS not found at:', cssPath);
+      }
+
+      // Inject React JS
+      if (fs.existsSync(jsPath)) {
+        const js = fs.readFileSync(jsPath, 'utf8');
+        mainWindow.webContents.executeJavaScript(`
+                if (!document.getElementById('root')) {
+                    const root = document.createElement('div');
+                    root.id = 'root';
+                    document.body.appendChild(root);
+                    console.log('Created #root for React');
+                }
+            `).then(() => {
+          mainWindow.webContents.executeJavaScript(js);
+          console.log('Injected React JS');
+        }).catch(err => console.error('Error executing JS:', err));
+      } else {
+        console.warn('React JS not found at:', jsPath);
+      }
+    } catch (e) {
+      console.error('Failed to inject renderer:', e);
+    }
   });
 
   // Track URL changes to save session
@@ -213,7 +239,7 @@ function createSettingsWindow() {
     title: 'Settings',
     backgroundColor: '#1a1a1a',
     webPreferences: {
-      preload: path.join(__dirname, 'settings-preload.js'),
+      preload: path.join(__dirname, '../../settings-preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -222,7 +248,8 @@ function createSettingsWindow() {
     show: false,
   });
 
-  settingsWindow.loadFile('settings.html');
+  const settingsHtmlPath = path.join(__dirname, '../../settings.html');
+  settingsWindow.loadFile(settingsHtmlPath);
 
   settingsWindow.once('ready-to-show', () => {
     settingsWindow.show();
