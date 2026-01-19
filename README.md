@@ -43,11 +43,28 @@ npm start
 
 ## Build for Distribution
 
+**macOS:**
 ```bash
 npm run build
 ```
 
-Creates a `.dmg` installer in the `dist/` folder.
+**Windows (x64 and ARM64):**
+```bash
+npm run build -- --win
+```
+
+Outputs to `dist/` directory.
+
+## Platform Differences
+
+### macOS
+- Closing window hides it, music continues playing
+- Click dock icon to show window again
+- Cmd+Q to fully quit
+
+### Windows
+- Closing window quits the app
+- Use global hotkey (Ctrl+Shift+Y) to hide/show in the `dist/` folder.
 
 ## License
 

@@ -8,7 +8,12 @@
     "dev": "electron .",
     "build": "electron-builder"
   },
-  "keywords": ["youtube", "music", "electron", "macos"],
+  "keywords": [
+    "youtube",
+    "music",
+    "electron",
+    "macos"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
@@ -22,8 +27,19 @@
   "build": {
     "appId": "com.youtube.musicplayer",
     "mac": {
-      "category": "public.app-category.music",
-      "target": ["dmg"]
+      "target": "dmg",
+      "category": "public.app-category.music"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
     }
   }
 }
