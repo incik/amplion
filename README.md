@@ -30,6 +30,7 @@ npm start
 ## Mini Player Controls
 
 **Mini Player Mode (default):**
+
 - Floating mini player at the top shows current video title
 - ⏮ Previous track
 - ▶/⏸ Play/Pause
@@ -37,6 +38,7 @@ npm start
 - YouTube header is hidden for distraction-free listening
 
 **Toggle Button (top-right 👁️):**
+
 - Click to switch between mini player mode and full YouTube interface
 - In full YouTube mode: mini player hides, YouTube header shows (access search, etc.)
 - Button turns red when showing full YouTube interface
@@ -44,11 +46,13 @@ npm start
 ## Build for Distribution
 
 **macOS:**
+
 ```bash
 npm run build
 ```
 
 **Windows (x64 and ARM64):**
+
 ```bash
 npm run build -- --win
 ```
@@ -58,11 +62,13 @@ Outputs to `dist/` directory.
 ## Platform Differences
 
 ### macOS
+
 - Closing window hides it, music continues playing
 - Click dock icon to show window again
 - Cmd+Q to fully quit
 
 ### Windows
+
 - Closing window quits the app
 - Use global hotkey (Ctrl+Shift+Y) to hide/show in the `dist/` folder.
 
