@@ -191,7 +191,7 @@ saveBtn.addEventListener("click", async () => {
 
 // Reset button handler
 resetBtn.addEventListener("click", async () => {
-  if (!confirm("Reset to default shortcut (CommandOrControl+Shift+~)?")) {
+  if (!confirm("Reset to default shortcut (CommandOrControl+Shift+Z)?")) {
     return;
   }
 

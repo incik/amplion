@@ -1,65 +1,110 @@
-const {
+import type {
+  Event,
+  IpcMainEvent,
+  IpcMainInvokeEvent,
+  Input,
+  MenuItemConstructorOptions,
+} from "electron";
+import {
   app,
   BrowserWindow,
+  BrowserView,
   globalShortcut,
   Menu,
   ipcMain,
-} = require("electron");
-const fs = require("fs");
-const path = require("path");
-const Store = require("electron-store");
+} from "electron";
+import fs from "fs";
+import path from "path";
+import Store from "electron-store";
 
-const store = new Store();
-let mainWindow;
-let settingsWindow;
+const DEFAULT_SHORTCUT = "CommandOrControl+Shift+Z";
+
+type WindowBounds = {
+  width: number;
+  height: number;
+  x?: number;
+  y?: number;
+};
+
+type StoreSchema = {
+  windowBounds: WindowBounds;
+  lastUrl: string;
+  customShortcut: string;
+};
+
+const store = new Store<StoreSchema>({
+  defaults: {
+    windowBounds: { width: 500, height: 600, x: undefined, y: undefined },
+    lastUrl: "https://www.youtube.com",
+    customShortcut: DEFAULT_SHORTCUT,
+  },
+});
+
+let mainWindow: BrowserWindow;
+let mainWindowView: BrowserView | null = null;
+let settingsWindow: BrowserWindow | null = null;
 let isQuitting = false;
-const DEFAULT_SHORTCUT = "CommandOrControl+Shift+~";
 
 function createWindow() {
   // Get saved window position or use defaults
-  const windowBounds = store.get("windowBounds", {
-    width: 500,
-    height: 600,
-    x: undefined,
-    y: undefined,
-  });
+  const windowBounds = store.get("windowBounds");
 
   // Always start at 600px height (full YouTube mode)
   windowBounds.height = 600;
+
+  const appPath = app.getAppPath();
+
+  // Resolve icon path - support both dev and prod
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "images", "icon-mac-512x512.png")
+    : path.join(appPath, "images", "icon-mac-512x512.png");
 
   mainWindow = new BrowserWindow({
     width: windowBounds.width,
     height: windowBounds.height,
     x: windowBounds.x,
     y: windowBounds.y,
+    title: "Amplion",
+    backgroundColor: "#000000",
+    show: false, // Don't show until ready
+    icon: iconPath,
+  });
+
+  const view = new BrowserView({
     webPreferences: {
-      preload: path.join(__dirname, "../preload/preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
-    title: "YouTube Music Player",
-    backgroundColor: "#000000",
-    show: false, // Don't show until ready
   });
+  mainWindowView = view;
+  mainWindow.setBrowserView(view);
+
+  const syncViewBounds = () => {
+    const { width, height } = mainWindow.getContentBounds();
+    view.setBounds({ x: 0, y: 0, width, height });
+  };
+  syncViewBounds();
+  view.setAutoResize({ width: true, height: true });
+  mainWindow.on("resize", syncViewBounds);
 
   // Load YouTube or last visited URL
-  const lastUrl = store.get("lastUrl", "https://www.youtube.com");
-  mainWindow.loadURL(lastUrl);
+  const lastUrl = store.get("lastUrl");
+  view.webContents.loadURL(lastUrl);
 
   // Show window when ready
-  mainWindow.once("ready-to-show", () => {
+  view.webContents.once("dom-ready", () => {
     mainWindow.show();
   });
 
   // Open DevTools with F12 for debugging
-  mainWindow.webContents.on("before-input-event", (event, input) => {
+  view.webContents.on("before-input-event", (event: Event, input: Input) => {
     if (input.key === "F12") {
-      mainWindow.webContents.toggleDevTools();
+      view.webContents.toggleDevTools();
     }
   });
 
   // Intercept close event - platform-specific behavior
-  mainWindow.on("close", (event) => {
+  mainWindow.on("close", (event: Event) => {
     if (process.platform === "darwin" && !isQuitting) {
       // macOS: hide instead of closing so music keeps playing (unless actually quitting)
       event.preventDefault();
@@ -82,51 +127,70 @@ function createWindow() {
   });
 
   // Handle window resize requests from renderer
-  ipcMain.on("resize-window", (event, { width, height }) => {
-    if (mainWindow) {
-      const currentBounds = mainWindow.getBounds();
-      // Center the window vertically when resizing
-      const newY = currentBounds.y + (currentBounds.height - height) / 2;
-      mainWindow.setBounds(
-        {
-          x: currentBounds.x,
-          y: Math.round(newY),
-          width: width,
-          height: height,
-        },
-        true,
-      ); // animate = true
-    }
-  });
+  ipcMain.on(
+    "resize-window",
+    (
+      event: IpcMainEvent,
+      { width, height }: { width: number; height: number },
+    ) => {
+      if (mainWindow) {
+        const currentBounds = mainWindow.getBounds();
+        // Center the window vertically when resizing
+        const newY = currentBounds.y + (currentBounds.height - height) / 2;
+        mainWindow.setBounds(
+          {
+            x: currentBounds.x,
+            y: Math.round(newY),
+            width: width,
+            height: height,
+          },
+          true,
+        ); // animate = true
+      }
+    },
+  );
 
   // Handle store operations from renderer
-  ipcMain.on("store-set", (event, { key, value }) => {
-    store.set(key, value);
-  });
+  ipcMain.on(
+    "store-set",
+    (event: IpcMainEvent, { key, value }: { key: string; value: unknown }) => {
+      store.set(key, value);
+    },
+  );
 
-  ipcMain.on("store-get", (event, { key, defaultValue }) => {
-    event.returnValue = store.get(key, defaultValue);
-  });
+  ipcMain.on(
+    "store-get",
+    (
+      event: IpcMainEvent,
+      { key, defaultValue }: { key: string; defaultValue: unknown },
+    ) => {
+      event.returnValue = store.get(key, defaultValue);
+    },
+  );
 
   // IPC handlers for settings window
   ipcMain.handle("get-current-shortcut", () => {
     return store.get("customShortcut", DEFAULT_SHORTCUT);
   });
 
-  ipcMain.handle("set-custom-shortcut", (event, shortcut) => {
-    try {
-      // Save to store
-      store.set("customShortcut", shortcut);
+  ipcMain.handle(
+    "set-custom-shortcut",
+    (event: IpcMainInvokeEvent, shortcut: string) => {
+      try {
+        // Save to store
+        store.set("customShortcut", shortcut);
 
-      // Re-register global shortcuts with new shortcut
-      registerGlobalShortcut();
+        // Re-register global shortcuts with new shortcut
+        registerGlobalShortcut();
 
-      return { success: true };
-    } catch (error) {
-      console.error("Failed to set custom shortcut:", error);
-      return { success: false, error: error.message };
-    }
-  });
+        return { success: true };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error("Failed to set custom shortcut:", error);
+        return { success: false, error: message };
+      }
+    },
+  );
 
   ipcMain.handle("reset-shortcut", () => {
     try {
@@ -134,8 +198,9 @@ function createWindow() {
       registerGlobalShortcut();
       return { success: true, shortcut: DEFAULT_SHORTCUT };
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
       console.error("Failed to reset shortcut:", error);
-      return { success: false, error: error.message };
+      return { success: false, error: message };
     }
   });
 
@@ -146,18 +211,18 @@ function createWindow() {
   });
 
   // Handle media keys
-  mainWindow.webContents.on("media-started-playing", () => {
+  view.webContents.on("media-started-playing", () => {
     console.log("Media started playing");
   });
 
-  mainWindow.webContents.on("media-paused", () => {
+  view.webContents.on("media-paused", () => {
     console.log("Media paused");
   });
 
   // Inject CSS to hide distracting elements and Inject React Renderer
-  mainWindow.webContents.on("did-finish-load", () => {
+  view.webContents.on("did-finish-load", () => {
     // 1. Inject Distraction-Free CSS (Original)
-    mainWindow.webContents.insertCSS(`
+    view.webContents.insertCSS(`
       /* Hide Create button */
       #buttons > ytd-button-renderer:nth-child(1) {
         display: none !important;
@@ -185,15 +250,14 @@ function createWindow() {
     // 2. Inject React App
     try {
       // Path to built renderer assets
-      // Note: We are in src/main/, so dist is ../../dist
-      const rendererPath = path.join(__dirname, "../../renderer_dist");
+      const rendererPath = path.join(app.getAppPath(), "renderer_dist");
       const cssPath = path.join(rendererPath, "assets/index.css");
       const jsPath = path.join(rendererPath, "assets/index.js");
 
       // Inject React CSS
       if (fs.existsSync(cssPath)) {
         const css = fs.readFileSync(cssPath, "utf8");
-        mainWindow.webContents.insertCSS(css);
+        view.webContents.insertCSS(css);
         console.log("Injected React CSS");
       } else {
         console.warn("React CSS not found at:", cssPath);
@@ -202,7 +266,7 @@ function createWindow() {
       // Inject React JS
       if (fs.existsSync(jsPath)) {
         const js = fs.readFileSync(jsPath, "utf8");
-        mainWindow.webContents
+        view.webContents
           .executeJavaScript(
             `
                 if (!document.getElementById('root')) {
@@ -214,7 +278,7 @@ function createWindow() {
             `,
           )
           .then(() => {
-            mainWindow.webContents.executeJavaScript(js);
+            view.webContents.executeJavaScript(js);
             console.log("Injected React JS");
           })
           .catch((err) => console.error("Error executing JS:", err));
@@ -227,11 +291,11 @@ function createWindow() {
   });
 
   // Track URL changes to save session
-  mainWindow.webContents.on("did-navigate-in-page", (event, url) => {
+  view.webContents.on("did-navigate-in-page", (event: Event, url: string) => {
     store.set("lastUrl", url);
   });
 
-  mainWindow.webContents.on("did-navigate", (event, url) => {
+  view.webContents.on("did-navigate", (event: Event, url: string) => {
     store.set("lastUrl", url);
   });
 }
@@ -243,7 +307,7 @@ function createSettingsWindow() {
     return;
   }
 
-  settingsWindow = new BrowserWindow({
+  const win = new BrowserWindow({
     width: 600,
     height: 500,
     resizable: false,
@@ -253,7 +317,7 @@ function createSettingsWindow() {
     title: "Settings",
     backgroundColor: "#1a1a1a",
     webPreferences: {
-      preload: path.join(__dirname, "../../settings-preload.js"),
+      preload: path.join(app.getAppPath(), "settings-preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -261,15 +325,23 @@ function createSettingsWindow() {
     modal: true,
     show: false,
   });
+  settingsWindow = win;
 
-  const settingsHtmlPath = path.join(__dirname, "../../settings.html");
-  settingsWindow.loadFile(settingsHtmlPath);
+  const settingsHtmlPath = path.join(app.getAppPath(), "settings.html");
+  win.loadFile(settingsHtmlPath);
 
-  settingsWindow.once("ready-to-show", () => {
-    settingsWindow.show();
+  win.once("ready-to-show", () => {
+    win.show();
   });
 
-  settingsWindow.on("closed", () => {
+  // close the window on Esc key press
+  win.webContents.on("before-input-event", (event: Event, input: Input) => {
+    if (input.key === "Escape") {
+      win.close();
+    }
+  });
+
+  win.on("closed", () => {
     settingsWindow = null;
   });
 }
@@ -327,21 +399,15 @@ function registerGlobalShortcut() {
 
   // Register media key shortcuts
   globalShortcut.register("MediaPlayPause", () => {
-    if (mainWindow) {
-      mainWindow.webContents.send("media-play-pause");
-    }
+    mainWindowView?.webContents.send("media-play-pause");
   });
 
   globalShortcut.register("MediaNextTrack", () => {
-    if (mainWindow) {
-      mainWindow.webContents.send("media-next-track");
-    }
+    mainWindowView?.webContents.send("media-next-track");
   });
 
   globalShortcut.register("MediaPreviousTrack", () => {
-    if (mainWindow) {
-      mainWindow.webContents.send("media-previous-track");
-    }
+    mainWindowView?.webContents.send("media-previous-track");
   });
 }
 
@@ -394,58 +460,11 @@ app.whenReady().then(() => {
           },
         ]
       : []),
-    // Edit menu
-    {
-      label: "Edit",
-      submenu: [
-        { role: "undo" },
-        { role: "redo" },
-        { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        ...(isMac
-          ? [
-              { role: "pasteAndMatchStyle" },
-              { role: "delete" },
-              { role: "selectAll" },
-            ]
-          : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
-      ],
-    },
-    // View menu
-    {
-      label: "View",
-      submenu: [
-        { role: "reload" },
-        { role: "forceReload" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-      ],
-    },
-    // Window menu
-    {
-      label: "Window",
-      submenu: [
-        { role: "minimize" },
-        { role: "zoom" },
-        ...(isMac
-          ? [
-              { type: "separator" },
-              { role: "front" },
-              { type: "separator" },
-              { role: "window" },
-            ]
-          : [{ role: "close" }]),
-      ],
-    },
   ];
 
-  const menu = Menu.buildFromTemplate(template);
+  const menu = Menu.buildFromTemplate(
+    template as unknown as MenuItemConstructorOptions[],
+  );
   Menu.setApplicationMenu(menu);
 
   // Register global shortcuts

@@ -24,27 +24,6 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
   }, []);
 
   useEffect(() => {
-    const ctx = getAudioContext();
-
-    const resume = async () => {
-      if (ctx.state !== "running") {
-        try {
-          await ctx.resume();
-        } catch {}
-      }
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
-    };
-    window.addEventListener("pointerdown", resume, { once: true });
-    window.addEventListener("keydown", resume, { once: true });
-
-    return () => {
-      window.removeEventListener("pointerdown", resume);
-      window.removeEventListener("keydown", resume);
-    };
-  }, []);
-
-  useEffect(() => {
     let rafId = null;
     let lastDraw = 0;
     let videoEl = null;
@@ -211,8 +190,6 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
       }
     };
   }, [enabled, fps, bars, height, analyser]);
-
-  console.log(analyser);
 
   return (
     <div className="mini-player-visualizer" style={{ height }}>

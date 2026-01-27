@@ -13,7 +13,7 @@ export function MiniPlayer({ visible }) {
         <div className="mini-player-title" id="mini-player-title">
           {title}
         </div>
-        {visible && <AudioVisualizer enabled={true} fps={30} bars={32} />}
+        <AudioVisualizer enabled={true} fps={30} bars={32} />
         <MiniPlayerControls />
       </div>
     </div>
