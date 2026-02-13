@@ -1,10 +1,22 @@
-import React, { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { getAudioContext } from "../utils/getAudioContext";
 
-const sourceNodeCache = new WeakMap();
+const sourceNodeCache = new WeakMap<HTMLVideoElement, MediaElementAudioSourceNode>();
 
-export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
-  const canvasRef = useRef(null);
+interface AudioVisualizerProps {
+  enabled?: boolean;
+  fps?: number;
+  bars?: number;
+  height?: number;
+}
+
+export function AudioVisualizer({
+  enabled,
+  fps = 30,
+  bars = 32,
+  height = 28,
+}: AudioVisualizerProps) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const analyser = useMemo(() => {
     const ctx = getAudioContext();
@@ -15,10 +27,10 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
   }, []);
 
   useEffect(() => {
-    let rafId = null;
+    let rafId: number | null = null;
     let lastDraw = 0;
-    let videoEl = null;
-    let data = null;
+    let videoEl: HTMLVideoElement | null = null;
+    let data: Uint8Array | null = null;
 
     const audioCtx = getAudioContext();
 
@@ -26,7 +38,7 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
       if (audioCtx.state === "running") return;
       // Resume can fail if the browser requires a user gesture.
       // We'll retry on subsequent play/user events.
-      audioCtx.resume().catch((err) => {
+      audioCtx.resume().catch((err: unknown) => {
         // Avoid throwing from animation/event loops.
         console.debug("AudioContext resume failed:", err);
       });
@@ -57,7 +69,7 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
           videoEl.removeEventListener("play", handleVideoPlay);
         }
 
-        videoEl = nextVideo;
+        videoEl = nextVideo as HTMLVideoElement;
 
         // Resume the context on playback start, including when playback
         // is toggled via media keys (no direct pointerdown in the page).
@@ -86,7 +98,7 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
       canvas.height = Math.floor(cssHeight * dpr);
     };
 
-    const draw = (ts) => {
+    const draw = (ts: number) => {
       if (!enabled) return;
 
       const minDelta = 1000 / fps;
@@ -110,7 +122,7 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
         return;
       }
 
-      analyser.getByteFrequencyData(data);
+      analyser.getByteFrequencyData(data as Uint8Array<ArrayBuffer>);
 
       ctx2d.clearRect(0, 0, canvas.width, canvas.height);
 

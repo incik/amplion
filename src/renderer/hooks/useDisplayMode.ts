@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 
-export function useDisplayMode() {
-  const [mode, setMode] = useState("full"); // 'mini' or 'full'
+type DisplayMode = "mini" | "full";
+
+export function useDisplayMode(): {
+  mode: DisplayMode;
+  toggle: () => void;
+} {
+  const [mode, setMode] = useState<DisplayMode>("full");
 
   // Load initial mode
   useEffect(() => {
-    // wait 10 seconds
-    const savedMode = window.amplionAppStore.get("lastMode", "full");
+    const savedMode = window.amplionAppStore.get("lastMode", "full") as DisplayMode;
     setMode(savedMode);
 
     if (savedMode === "mini") {
@@ -17,7 +21,7 @@ export function useDisplayMode() {
   }, []);
 
   const toggle = () => {
-    const newMode = mode === "mini" ? "full" : "mini";
+    const newMode: DisplayMode = mode === "mini" ? "full" : "mini";
     setMode(newMode);
     window.amplionAppStore.set("lastMode", newMode);
 

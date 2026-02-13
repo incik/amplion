@@ -1,11 +1,8 @@
-import React from "react";
 import { useVideoState } from "../hooks/useVideoState";
 import { MiniPlayerButton } from "./MiniPlayerButton";
-import { useDisplayMode } from "../hooks/useDisplayMode";
 
 export function MiniPlayerControls() {
   const { isPlaying, togglePlayPause } = useVideoState();
-  const { mode, toggle } = useDisplayMode();
 
   const handlePrev = () => {
     window.electronAPI.clickYouTubeButton(".ytp-prev-button");

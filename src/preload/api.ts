@@ -8,12 +8,18 @@ export function exposeAPI(
   ipcRenderer: IpcRenderer,
 ): void {
   contextBridge.exposeInMainWorld("electronAPI", {
-    onMediaPlayPause: (callback: () => void) =>
-      ipcRenderer.on("media-play-pause", callback),
-    onMediaNextTrack: (callback: () => void) =>
-      ipcRenderer.on("media-next-track", callback),
-    onMediaPreviousTrack: (callback: () => void) =>
-      ipcRenderer.on("media-previous-track", callback),
+    onMediaPlayPause: (callback: () => void) => {
+      ipcRenderer.on("media-play-pause", callback);
+      return () => ipcRenderer.removeListener("media-play-pause", callback);
+    },
+    onMediaNextTrack: (callback: () => void) => {
+      ipcRenderer.on("media-next-track", callback);
+      return () => ipcRenderer.removeListener("media-next-track", callback);
+    },
+    onMediaPreviousTrack: (callback: () => void) => {
+      ipcRenderer.on("media-previous-track", callback);
+      return () => ipcRenderer.removeListener("media-previous-track", callback);
+    },
     resizeWindow: (width: number, height: number) =>
       ipcRenderer.send("resize-window", { width, height }),
     isYouTubeReady: () =>
@@ -30,9 +36,15 @@ export function exposeAPI(
       const video = document.querySelector(YT_VIDEO_SELECTOR);
       if (video) {
         const v = video as HTMLVideoElement;
-        if (v.paused) v.play();
-        else v.pause();
+        if (v.paused) {
+          v.play();
+          return true;
+        } else {
+          v.pause();
+          return false;
+        }
       }
+      return false;
     },
     getVideoDuration: () => {
       const video = document.querySelector(YT_VIDEO_SELECTOR);
@@ -49,6 +61,10 @@ export function exposeAPI(
         return v.currentTime;
       }
       return 0;
+    },
+    clickYouTubeButton: (selector: string) => {
+      const el = document.querySelector(selector);
+      if (el instanceof HTMLElement) el.click();
     },
   });
   console.log("isYouTubeReady injected");

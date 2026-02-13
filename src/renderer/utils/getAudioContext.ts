@@ -1,10 +1,13 @@
 let audioCtxSingleton: AudioContext | null = null;
 
-export function getAudioContext() {
+const AudioContextClass =
+  window.AudioContext ||
+  (window as Window & { webkitAudioContext?: typeof AudioContext })
+    .webkitAudioContext!;
+
+export function getAudioContext(): AudioContext {
   if (!audioCtxSingleton) {
-    audioCtxSingleton = new (
-      window.AudioContext || window.webkitAudioContext
-    )();
+    audioCtxSingleton = new AudioContextClass();
   }
   return audioCtxSingleton;
 }

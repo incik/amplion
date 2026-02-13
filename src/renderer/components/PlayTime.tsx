@@ -1,6 +1,6 @@
 // This component displays the current play and total time of the video
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 export function PlayTime() {
   const [currentTime, setCurrentTime] = useState(0);

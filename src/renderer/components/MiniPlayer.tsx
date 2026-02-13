@@ -1,11 +1,14 @@
-import React from "react";
 import { useVideoTitle } from "../hooks/useVideoTitle";
 import { MiniPlayerControls } from "./MiniPlayerControls";
 import { AudioVisualizer } from "./AudioVisualizer";
 import "../styles/MiniPlayer.css";
 import { PlayTime } from "./PlayTime";
 
-export function MiniPlayer({ visible }) {
+interface MiniPlayerProps {
+  visible: boolean;
+}
+
+export function MiniPlayer({ visible }: MiniPlayerProps) {
   const title = useVideoTitle();
 
   return (

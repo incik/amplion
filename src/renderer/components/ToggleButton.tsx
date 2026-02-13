@@ -1,6 +1,11 @@
-import React from "react";
+type DisplayMode = "mini" | "full";
 
-export function ToggleButton({ mode, onToggle }) {
+interface ToggleButtonProps {
+  mode: DisplayMode;
+  onToggle: () => void;
+}
+
+export function ToggleButton({ mode, onToggle }: ToggleButtonProps) {
   return (
     <button
       id="mp-toggle-view"

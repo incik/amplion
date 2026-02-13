@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 
-export function useVideoState() {
+export function useVideoState(): {
+  isPlaying: boolean;
+  togglePlayPause: () => void;
+} {
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -29,7 +32,7 @@ export function useVideoState() {
   }, []);
 
   const togglePlayPause = () => {
-    // Use the safe bridge method to toggle
+    // Use the safe bridge method to toggle (returns new playing state)
     const newState = window.electronAPI.togglePlayback();
     setIsPlaying(newState);
   };

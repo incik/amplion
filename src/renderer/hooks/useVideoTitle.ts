@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-export function useVideoTitle() {
+export function useVideoTitle(): string {
   const [title, setTitle] = useState("Loading...");
 
   useEffect(() => {
@@ -11,13 +11,13 @@ export function useVideoTitle() {
     const intervalId = setInterval(() => {
       const newTitle = window.electronAPI.getYouTubeTitle();
       // Only update state if title changed to avoid unnecessary re-renders
-      setTitle((prev) => (newTitle !== prev ? newTitle : prev));
+      setTitle((prev: string) => (newTitle !== prev ? newTitle : prev));
     }, 2000);
 
     // Also observe DOM mutations for faster updates
     const observer = new MutationObserver(() => {
       const newTitle = window.electronAPI.getYouTubeTitle();
-      setTitle((prev) => (newTitle !== prev ? newTitle : prev));
+      setTitle((prev: string) => (newTitle !== prev ? newTitle : prev));
     });
 
     try {
