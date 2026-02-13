@@ -1,76 +1,35 @@
-# YouTube Music Player
+# Amplion
 
-A lightweight macOS desktop app for distraction-free YouTube music listening.
+<image width="200" src="https://github.com/incik/amplion/blob/master/amplion.png" />
+
+A lightweight, ADHD-friendly desktop YouTube music player. Listen without distractions—minimal chrome, no comments, optional mini mode with just controls and an audio visualizer. Accessible from anywhere via a global keyboard shortcut.
 
 ## Features
 
-- 🎵 Compact 500x600 non-resizable window
-- 🎛️ **Mini player overlay** - Always visible controls with video title
-- 👁️ **Mode toggle button** - Switch between mini player mode and full YouTube interface
-- ⌨️ Global hotkey (Cmd+Shift+Y) to show/hide app
-- 🎹 System media keys support (Play/Pause, Next, Previous)
-- 🚫 **Element blocking** - Hides Create button, comments, and notifications
-- 💾 Remembers window position
-- 🚀 Fast and lightweight
+- Small fixed window with YouTube
+- Mini mode: hide the full YouTube UI, show only controls + visualizer
+- Global shortcut (default: `Cmd/Ctrl+Shift+Z`) to show/hide
+- Media keys support (play/pause, next, previous)
+- Settings: customize the shortcut via **Settings** (Cmd+,)
 
-## Quick Start
+## Requirements
 
-```bash
-npm install
-npm start
-```
+- [Bun](https://bun.sh)
 
-## Keyboard Shortcuts
-
-- **Cmd+Shift+Y** - Toggle show/hide window
-- **Media Play/Pause** - Toggle playback
-- **Media Next** - Next video
-- **Media Previous** - Previous video
-
-## Mini Player Controls
-
-**Mini Player Mode (default):**
-
-- Floating mini player at the top shows current video title
-- ⏮ Previous track
-- ▶/⏸ Play/Pause
-- ⏭ Next track
-- YouTube header is hidden for distraction-free listening
-
-**Toggle Button (top-right 👁️):**
-
-- Click to switch between mini player mode and full YouTube interface
-- In full YouTube mode: mini player hides, YouTube header shows (access search, etc.)
-- Button turns red when showing full YouTube interface
-
-## Build for Distribution
-
-**macOS:**
+## Development
 
 ```bash
-npm run build
+bun install
+bun run dev
 ```
 
-**Windows (x64 and ARM64):**
+## Build
 
 ```bash
-npm run build -- --win
+bun run build
 ```
 
-Outputs to `dist/` directory.
-
-## Platform Differences
-
-### macOS
-
-- Closing window hides it, music continues playing
-- Click dock icon to show window again
-- Cmd+Q to fully quit
-
-### Windows
-
-- Closing window quits the app
-- Use global hotkey (Ctrl+Shift+Y) to hide/show in the `dist/` folder.
+Output goes to `dist/` (DMG on macOS, NSIS on Windows).
 
 ## License
 
