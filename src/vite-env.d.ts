@@ -19,6 +19,19 @@ declare global {
       get: (key: string, defaultValue?: unknown) => unknown;
       set: (key: string, value: unknown) => void;
     };
+    settingsAPI: {
+      getCurrentShortcut: () => Promise<string>;
+      setCustomShortcut: (shortcut: string) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      resetToDefault: () => Promise<{
+        success: boolean;
+        shortcut?: string;
+        error?: string;
+      }>;
+      closeWindow: () => Promise<void>;
+    };
   }
 }
 

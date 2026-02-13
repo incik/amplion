@@ -16,5 +16,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/renderer/**/*", "src/vite-env.d.ts"]
+  "include": ["src/renderer/**/*", "src/settings/**/*", "src/vite-env.d.ts"]
 }

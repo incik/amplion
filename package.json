@@ -5,15 +5,17 @@
   "description": "Lightweight ADHD friendly YouTube music player",
   "main": "build/main/main.js",
   "scripts": {
-    "start": "bun run build:main && bun run build:renderer && bun run build:preload && electron .",
-    "dev": "bun run build:preload && bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
-    "dev:renderer": "vite build --mode development --watch",
+    "typecheck": "bunx tsc -p tsconfig.main.json --noEmit && bunx tsc -p tsconfig.preload.json --noEmit && bunx tsc -p tsconfig.json --noEmit",
+    "start": "bun run build:main && bun run build:renderer && bun run build:preload && bun run build:settings-preload && electron .",
+    "dev": "bun run build:preload && bun run build:settings-preload && bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
+    "dev:renderer": "VITE_BUILD_MODE=index vite build --mode development && VITE_BUILD_MODE=settings vite build --mode development && bunx concurrently \"VITE_BUILD_MODE=index vite build --mode development --watch\" \"VITE_BUILD_MODE=settings vite build --mode development --watch\"",
     "dev:main": "bunx tsc -p tsconfig.main.json --watch --preserveWatchOutput",
     "dev:electron": "bun scripts/dev-electron.mjs",
     "build:main": "bunx tsc -p tsconfig.main.json",
-    "build:renderer": "vite build",
+    "build:renderer": "VITE_BUILD_MODE=index vite build && VITE_BUILD_MODE=settings vite build",
     "build:preload": "bunx tsc -p tsconfig.preload.json --noEmit && bun build src/preload/index.ts --outfile=build/preload/preload.js --format=cjs --target=node --external=electron",
-    "build": "bun run build:main && bun run build:renderer && bun run build:preload && electron-builder"
+    "build:settings-preload": "bun build src/settings-preload/index.ts --outfile=build/settings-preload/settings-preload.js --format=cjs --target=node --external=electron",
+    "build": "bun run build:main && bun run build:renderer && bun run build:preload && bun run build:settings-preload && electron-builder"
   },
   "keywords": [
     "youtube",
@@ -48,11 +50,8 @@
     "files": [
       "build/main/**",
       "build/preload/**",
+      "build/settings-preload/**",
       "renderer_dist/**",
-      "settings.html",
-      "settings-preload.js",
-      "settings-renderer.js",
-      "settings.css",
       "amplion.af",
       "images/**"
     ],

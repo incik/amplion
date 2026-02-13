@@ -1,8 +1,12 @@
 # Amplion
 
-<image width="200" src="https://github.com/incik/amplion/blob/master/amplion.png" />
+<p align="center">
+    <image width="200" src="https://github.com/incik/amplion/blob/master/amplion.png" />
+</p>
 
 A lightweight, ADHD-friendly desktop YouTube music player. Listen without distractions—minimal chrome, no comments, optional mini mode with just controls and an audio visualizer. Accessible from anywhere via a global keyboard shortcut.
+
+ <image src="https://github.com/incik/amplion/blob/master/images/screen.png" />
 
 ## Features
 

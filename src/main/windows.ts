@@ -108,7 +108,7 @@ export function createSettingsWindow(
     title: "Settings",
     backgroundColor: "#1a1a1a",
     webPreferences: {
-      preload: path.join(app.getAppPath(), "settings-preload.js"),
+      preload: path.join(__dirname, "..", "settings-preload", "settings-preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -118,7 +118,13 @@ export function createSettingsWindow(
   });
   setSettingsWindow(win);
 
-  const settingsHtmlPath = path.join(app.getAppPath(), "settings.html");
+  const settingsHtmlPath = path.join(
+    app.getAppPath(),
+    "renderer_dist",
+    "src",
+    "settings",
+    "index.html",
+  );
   win.loadFile(settingsHtmlPath);
 
   win.once("ready-to-show", () => {
