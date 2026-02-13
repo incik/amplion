@@ -22,7 +22,6 @@ export default function App() {
     const checkYouTube = () => {
       // Use the preload bridge to check
       if (window.electronAPI.isYouTubeReady()) {
-        console.log("YouTube app detected, mounting React UI...");
         setIsReady(true);
       } else {
         // console.log('Waiting for YouTube...');

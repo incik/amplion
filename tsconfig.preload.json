@@ -3,13 +3,13 @@
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
-    "outDir": "build/main",
-    "rootDir": "src/main",
+    "lib": ["ES2022", "DOM"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "types": ["node", "electron"],
-    "sourceMap": true
+    "noEmit": true,
+    "rootDir": "src/preload"
   },
-  "include": ["src/main/**/*.ts", "src/vite-env.d.ts"]
+  "include": ["src/preload/**/*.ts"]
 }

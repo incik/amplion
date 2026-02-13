@@ -1,16 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
+import { getAudioContext } from "../utils/getAudioContext";
 
-let audioCtxSingleton = null;
 const sourceNodeCache = new WeakMap();
-
-function getAudioContext() {
-  if (!audioCtxSingleton) {
-    audioCtxSingleton = new (
-      window.AudioContext || window.webkitAudioContext
-    )();
-  }
-  return audioCtxSingleton;
-}
 
 export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
   const canvasRef = useRef(null);
@@ -190,6 +181,8 @@ export function AudioVisualizer({ enabled, fps = 30, bars = 32, height = 28 }) {
       }
     };
   }, [enabled, fps, bars, height, analyser]);
+
+  console.log("Rendering AudioVisualizer, enabled=", enabled);
 
   return (
     <div className="mini-player-visualizer" style={{ height }}>

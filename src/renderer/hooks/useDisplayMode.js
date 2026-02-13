@@ -5,7 +5,8 @@ export function useDisplayMode() {
 
   // Load initial mode
   useEffect(() => {
-    const savedMode = window.store.get("lastMode", "full");
+    // wait 10 seconds
+    const savedMode = window.amplionAppStore.get("lastMode", "full");
     setMode(savedMode);
 
     if (savedMode === "mini") {
@@ -18,7 +19,7 @@ export function useDisplayMode() {
   const toggle = () => {
     const newMode = mode === "mini" ? "full" : "mini";
     setMode(newMode);
-    window.store.set("lastMode", newMode);
+    window.amplionAppStore.set("lastMode", newMode);
 
     if (newMode === "mini") {
       document.body.classList.add("mini-player-mode");

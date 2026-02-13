@@ -5,14 +5,15 @@
   "description": "Lightweight ADHD friendly YouTube music player",
   "main": "build/main/main.js",
   "scripts": {
-    "start": "bun run build:main && bun run build:renderer && electron .",
-    "dev": "bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
+    "start": "bun run build:main && bun run build:renderer && bun run build:preload && electron .",
+    "dev": "bun run build:preload && bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
     "dev:renderer": "vite build --mode development --watch",
     "dev:main": "bunx tsc -p tsconfig.main.json --watch --preserveWatchOutput",
-    "dev:electron": "bunx wait-on build/main/main.js renderer_dist/src/renderer/index.html && electron .",
+    "dev:electron": "bun scripts/dev-electron.mjs",
     "build:main": "bunx tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
-    "build": "bun run build:main && bun run build:renderer && electron-builder"
+    "build:preload": "bunx tsc -p tsconfig.preload.json --noEmit && bun build src/preload/index.ts --outfile=build/preload/preload.js --format=cjs --target=node --external=electron",
+    "build": "bun run build:main && bun run build:renderer && bun run build:preload && electron-builder"
   },
   "keywords": [
     "youtube",
@@ -44,12 +45,12 @@
     "appId": "cz.incik.amplion",
     "files": [
       "build/main/**",
+      "build/preload/**",
       "renderer_dist/**",
       "settings.html",
       "settings-preload.js",
       "settings-renderer.js",
       "settings.css",
-      "preload.js",
       "amplion.af",
       "images/**"
     ],

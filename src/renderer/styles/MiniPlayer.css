@@ -120,6 +120,7 @@
 
 .mini-player-visualizer {
   width: 100%;
+  min-height: 28px;
   border-radius: 8px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.06);
@@ -129,6 +130,12 @@
   width: 100%;
   height: 100%;
   display: block;
+}
+
+.mp-play-time {
+  color: #fff;
+  font-size: 12px;
+  text-align: center;
 }
 
 /* Global modifications (managed by React usage of body class) */
