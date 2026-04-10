@@ -194,8 +194,6 @@ export function AudioVisualizer({
     };
   }, [enabled, fps, bars, height, analyser]);
 
-  console.log("Rendering AudioVisualizer, enabled=", enabled);
-
   return (
     <div className="mini-player-visualizer" style={{ height }}>
       <canvas ref={canvasRef} className="mini-player-visualizer-canvas" />

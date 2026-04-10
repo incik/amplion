@@ -36,11 +36,9 @@ export function useDisplayMode(): {
 
   // Effect to handle dynamic resizing when in mini mode
   useEffect(() => {
-    console.log("Display mode changed to:", mode);
     if (mode === "mini") {
       // Calculate height based on mini player element
       const resize = () => {
-        console.log("callled resize");
         const miniPlayer = document.getElementById("custom-mini-player");
         if (miniPlayer) {
           const rect = miniPlayer.getBoundingClientRect();
@@ -52,10 +50,6 @@ export function useDisplayMode(): {
 
       // Initial resize
       setTimeout(resize, 100);
-
-      // Re-measure periodically as title might wrap
-      //cconst interval = setInterval(resize, 2000);
-      // return () => clearInterval(interval);
     }
   }, [mode]);
 

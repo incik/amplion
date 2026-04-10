@@ -48,7 +48,6 @@ export default function App() {
 
   const handleSwitchService = (service: "youtube" | "youtubeMusic") => {
     if (service !== currentService) {
-      console.log("switchService", service);
       window.electronAPI.switchService(service);
     }
   };

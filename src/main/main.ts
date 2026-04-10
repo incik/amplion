@@ -1,26 +1,12 @@
-import type { Event, Input, MenuItemConstructorOptions } from "electron";
+import type { Event, Input } from "electron";
 import { app, BrowserWindow, globalShortcut, Menu } from "electron";
 import path from "path";
-import { DEFAULT_SHORTCUT, store } from "./store";
+import { store } from "./store";
 import { registerIpcHandlers } from "./ipc";
 import { injectYouTubeAndRenderer, injectYouTubeMusicShell } from "./inject";
-
-function isYouTubeMusicUrl(url: string): boolean {
-  try {
-    return new URL(url).hostname === "music.youtube.com";
-  } catch {
-    return false;
-  }
-}
-
-function isYouTubeUrl(url: string): boolean {
-  try {
-    const host = new URL(url).hostname;
-    return host === "www.youtube.com" || host === "youtube.com";
-  } catch {
-    return false;
-  }
-}
+import { isYouTubeMusicUrl, isYouTubeUrl } from "./urlHelpers";
+import { buildAppMenu } from "./menu";
+import { registerGlobalShortcuts } from "./shortcuts";
 
 function persistUrlByHost(url: string): void {
   if (isYouTubeMusicUrl(url)) {
@@ -31,7 +17,6 @@ function persistUrlByHost(url: string): void {
 }
 
 let mainWindow: BrowserWindow | undefined;
-// let mainWindowView: BrowserView | null = null;
 let settingsWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
@@ -66,23 +51,6 @@ function createWindow() {
   });
   mainWindow = win;
 
-  // const view = new BrowserView({
-  //   webPreferences: {
-  //     nodeIntegration: false,
-  //     contextIsolation: true,
-  //   },
-  // });
-  // mainWindowView = view;
-  // mainWindow.setBrowserView(view);
-
-  // const syncViewBounds = () => {
-  //   const { width, height } = mainWindow.getContentBounds();
-  //   mainWindow.setBounds({ x: 0, y: 0, width, height });
-  // };
-  // syncViewBounds();
-  // mainWindow.setAutoResize({ width: true, height: true });
-  // mainWindow.on("resize", syncViewBounds);
-
   const service = store.get("service");
   const initialUrl =
     service === "youtubeMusic"
@@ -91,7 +59,6 @@ function createWindow() {
   win.webContents.loadURL(initialUrl);
 
   win.once("ready-to-show", () => {
-    console.log("showing main window");
     win.show();
   });
 
@@ -116,14 +83,6 @@ function createWindow() {
     if (process.platform !== "darwin") {
       store.set("windowBounds", win.getBounds());
     }
-  });
-
-  win.webContents.on("media-started-playing", () => {
-    console.log("Media started playing");
-  });
-
-  win.webContents.on("media-paused", () => {
-    console.log("Media paused");
   });
 
   win.webContents.on("did-finish-load", () => {
@@ -228,110 +187,20 @@ function toggleWindow() {
   }
 }
 
-function registerGlobalShortcut() {
-  // Unregister existing shortcut first
-  globalShortcut.unregisterAll();
-
-  // Get custom shortcut from store or use default
-  const shortcut = store.get("customShortcut", DEFAULT_SHORTCUT);
-
-  // Register window toggle shortcut
-  const ret = globalShortcut.register(shortcut, () => {
-    toggleWindow();
-  });
-
-  if (!ret) {
-    console.log("Global shortcut registration failed for:", shortcut);
-    // Fall back to default if custom shortcut fails
-    if (shortcut !== DEFAULT_SHORTCUT) {
-      console.log("Falling back to default shortcut");
-      store.set("customShortcut", DEFAULT_SHORTCUT);
-      globalShortcut.register(DEFAULT_SHORTCUT, () => {
-        toggleWindow();
-      });
-    }
-  } else {
-    console.log("Global shortcut registered:", shortcut);
-  }
-
-  // Register media key shortcuts
-  globalShortcut.register("MediaPlayPause", () => {
-    mainWindow?.webContents.send("media-play-pause");
-  });
-
-  globalShortcut.register("MediaNextTrack", () => {
-    mainWindow?.webContents.send("media-next-track");
-  });
-
-  globalShortcut.register("MediaPreviousTrack", () => {
-    mainWindow?.webContents.send("media-previous-track");
-  });
-}
-
 app.whenReady().then(() => {
   registerIpcHandlers(
     store,
     () => mainWindow,
     () => settingsWindow,
-    registerGlobalShortcut,
+    () => registerGlobalShortcuts(() => mainWindow, toggleWindow),
   );
   createWindow();
 
   // Create application menu
-  const isMac = process.platform === "darwin";
-
-  const template = [
-    // App menu (macOS only)
-    ...(isMac
-      ? [
-          {
-            label: app.name,
-            submenu: [
-              { role: "about" },
-              { type: "separator" },
-              {
-                label: "Settings...",
-                accelerator: "CommandOrControl+,",
-                click: () => createSettingsWindow(),
-              },
-              { type: "separator" },
-              { role: "services" },
-              { type: "separator" },
-              { role: "hide" },
-              { role: "hideOthers" },
-              { role: "unhide" },
-              { type: "separator" },
-              { role: "quit" },
-            ],
-          },
-        ]
-      : []),
-    // File menu (Windows/Linux)
-    ...(!isMac
-      ? [
-          {
-            label: "File",
-            submenu: [
-              {
-                label: "Settings...",
-                accelerator: "CommandOrControl+,",
-                click: () => createSettingsWindow(),
-              },
-              { type: "separator" },
-              { role: "quit" },
-            ],
-          },
-        ]
-      : []),
-  ];
-
-  const menu = Menu.buildFromTemplate(
-    template as unknown as MenuItemConstructorOptions[],
-  );
-  Menu.setApplicationMenu(menu);
+  Menu.setApplicationMenu(Menu.buildFromTemplate(buildAppMenu(() => createSettingsWindow())));
 
   // Register global shortcuts
-  registerGlobalShortcut();
+  registerGlobalShortcuts(() => mainWindow, toggleWindow);
 
   app.on("activate", () => {
     // macOS only: clicking the dock icon should show the window if hidden
