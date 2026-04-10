@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { MiniPlayer } from "./components/MiniPlayer";
+import { ServiceSwitch } from "./components/ServiceSwitch";
 import { ToggleButton } from "./components/ToggleButton";
 import { useDisplayMode } from "./hooks/useDisplayMode";
 import "./styles/MiniPlayer.css";
+
+const isYouTubeMusic = () =>
+  typeof window !== "undefined" &&
+  window.location.hostname === "music.youtube.com";
 
 // Styles to inject for hiding YouTube when in mini mode
 const hiddenYouTubeStyles = `
@@ -16,41 +21,55 @@ export default function App() {
   const [isReady, setIsReady] = useState(false);
   const { mode, toggle } = useDisplayMode();
 
-  // Retry logic to wait for YouTube to load
   useEffect(() => {
-    // Only mount UI once YouTube is largely ready
-    const checkYouTube = () => {
-      // Use the preload bridge to check
-      if (window.electronAPI.isYouTubeReady()) {
-        setIsReady(true);
-      } else {
-        // console.log('Waiting for YouTube...');
-        setTimeout(checkYouTube, 500);
+    if (isYouTubeMusic()) {
+      // YouTube Music: no ytd-app; consider ready once body exists and give the page a moment
+      if (document.body) {
+        const t = setTimeout(() => setIsReady(true), 500);
+        return () => clearTimeout(t);
       }
-    };
-    checkYouTube();
-  }, []);
-
-  // Also inject the style tag for hiding YouTube
-  useEffect(() => {
-    // We already toggle the class on body in useDisplayMode
-    // But we need the CSS rules present in the page.
-    // They are in MiniPlayer.css but scoped to what?
-    // ytd-app is outside our root.
-    // So we need a global style or <style> tag.
-    // Since MiniPlayer.css is imported, if we put the rule there,
-    // it should apply globally if the build system outputs it.
-    // However, depending on Vite setup, CSS might be scoped or not.
-    // Standard CSS import is global.
+    } else {
+      // YouTube: wait for ytd-app
+      const checkYouTube = () => {
+        if (window.electronAPI.isYouTubeReady()) {
+          setIsReady(true);
+        } else {
+          setTimeout(checkYouTube, 500);
+        }
+      };
+      checkYouTube();
+    }
   }, []);
 
   if (!isReady) return null;
+
+  const onYouTubeMusic = isYouTubeMusic();
+  const currentService = onYouTubeMusic ? "youtubeMusic" : "youtube";
+
+  const handleSwitchService = (service: "youtube" | "youtubeMusic") => {
+    if (service !== currentService) {
+      console.log("switchService", service);
+      window.electronAPI.switchService(service);
+    }
+  };
+
+  if (onYouTubeMusic) {
+    return (
+      <ServiceSwitch
+        currentService={currentService}
+        onSwitch={handleSwitchService}
+      />
+    );
+  }
 
   return (
     <>
       <MiniPlayer visible={mode === "mini"} />
       <ToggleButton mode={mode} onToggle={toggle} />
-      {/* Explicit style injection into React tree to ensure it's present */}
+      <ServiceSwitch
+        currentService={currentService}
+        onSwitch={handleSwitchService}
+      />
       <style>{hiddenYouTubeStyles}</style>
     </>
   );

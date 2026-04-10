@@ -138,5 +138,44 @@
   text-align: center;
 }
 
+/* Service switch (YouTube vs YouTube Music) */
+.service-switch {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  z-index: 99999998 !important;
+  display: flex;
+  gap: 0;
+  background: rgba(15, 15, 15, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  visibility: visible !important;
+}
+
+.service-switch-btn {
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.service-switch-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.service-switch-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
 /* Global modifications (managed by React usage of body class) */
 /* Note: Vite will bundle this likely into main CSS. */

@@ -14,6 +14,7 @@ declare global {
       getVideoDuration: () => number;
       getVideoCurrentTime: () => number;
       clickYouTubeButton: (selector: string) => void;
+      switchService: (service: "youtube" | "youtubeMusic") => void;
     };
     amplionAppStore: {
       get: (key: string, defaultValue?: unknown) => unknown;

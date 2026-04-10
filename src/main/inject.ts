@@ -28,9 +28,7 @@ const YOUTUBE_DISTRACTION_FREE_CSS = `
   }
 `;
 
-export function injectYouTubeAndRenderer(webContents: WebContents): void {
-  webContents.insertCSS(YOUTUBE_DISTRACTION_FREE_CSS);
-
+function injectRendererBundle(webContents: WebContents): void {
   try {
     const rendererPath = path.join(app.getAppPath(), "renderer_dist");
     const cssPath = path.join(rendererPath, "assets/index.css");
@@ -68,4 +66,14 @@ export function injectYouTubeAndRenderer(webContents: WebContents): void {
   } catch (e) {
     console.error("Failed to inject renderer:", e);
   }
+}
+
+export function injectYouTubeAndRenderer(webContents: WebContents): void {
+  webContents.insertCSS(YOUTUBE_DISTRACTION_FREE_CSS);
+  injectRendererBundle(webContents);
+}
+
+/** Injects only the React bundle (no distraction-free CSS). Used on YouTube Music. */
+export function injectYouTubeMusicShell(webContents: WebContents): void {
+  injectRendererBundle(webContents);
 }

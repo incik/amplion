@@ -66,6 +66,8 @@ export function exposeAPI(
       const el = document.querySelector(selector);
       if (el instanceof HTMLElement) el.click();
     },
+    switchService: (service: "youtube" | "youtubeMusic") =>
+      ipcRenderer.send("switch-service", service),
   });
   console.log("isYouTubeReady injected");
   // Expose store for session persistence via IPC

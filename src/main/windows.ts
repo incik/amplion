@@ -3,7 +3,33 @@ import { app, BrowserWindow } from "electron";
 import path from "path";
 import type Store from "electron-store";
 import type { StoreSchema } from "./store";
-import { injectYouTubeAndRenderer } from "./inject";
+import { injectYouTubeAndRenderer, injectYouTubeMusicShell } from "./inject";
+
+function isYouTubeMusicUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "music.youtube.com";
+  } catch {
+    return false;
+  }
+}
+
+function isYouTubeUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname;
+    return host === "www.youtube.com" || host === "youtube.com";
+  } catch {
+    return false;
+  }
+}
+
+function persistUrlByHost(store: Store<StoreSchema>, url: string): void {
+  if (isYouTubeMusicUrl(url)) {
+    store.set("lastUrlYouTubeMusic", url);
+  } else if (isYouTubeUrl(url)) {
+    store.set("lastUrlYouTube", url);
+  }
+}
 
 export function createMainWindow(
   store: Store<StoreSchema>,
@@ -33,8 +59,12 @@ export function createMainWindow(
     icon: iconPath,
   });
 
-  const lastUrl = store.get("lastUrl");
-  win.webContents.loadURL(lastUrl);
+  const service = store.get("service");
+  const initialUrl =
+    service === "youtubeMusic"
+      ? store.get("lastUrlYouTubeMusic")
+      : store.get("lastUrlYouTube");
+  win.webContents.loadURL(initialUrl);
 
   win.once("ready-to-show", () => {
     console.log("showing main window");
@@ -73,15 +103,29 @@ export function createMainWindow(
   });
 
   win.webContents.on("did-finish-load", () => {
-    injectYouTubeAndRenderer(win.webContents);
+    const url = win.webContents.getURL();
+    if (isYouTubeMusicUrl(url)) {
+      injectYouTubeMusicShell(win.webContents);
+    } else if (isYouTubeUrl(url)) {
+      injectYouTubeAndRenderer(win.webContents);
+    }
   });
 
   win.webContents.on("did-navigate-in-page", (_event: Event, url: string) => {
-    store.set("lastUrl", url);
+    persistUrlByHost(store, url);
   });
 
   win.webContents.on("did-navigate", (_event: Event, url: string) => {
-    store.set("lastUrl", url);
+    persistUrlByHost(store, url);
+  });
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (isYouTubeMusicUrl(url) || isYouTubeUrl(url)) {
+      win.webContents.loadURL(url);
+      persistUrlByHost(store, url);
+      return { action: "deny" };
+    }
+    return { action: "allow" };
   });
 
   return win;

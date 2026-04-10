@@ -2,7 +2,7 @@
 
 ## What This Project Is
 
-**Amplion** is a **lightweight, ADHD-friendly desktop YouTube music player**. It is an Electron app that loads YouTube in a small, fixed-size window and layers a custom mini-player UI on top. The goal is distraction-free listening: minimal chrome, no comments/notifications, and optional "mini mode" that hides the full YouTube interface and shows only controls and an audio visualizer. The player is accessible anywhere via a simple global keyboard shortcut (show/hide).
+**Amplion** is a **lightweight, ADHD-friendly desktop player for YouTube and YouTube Music**. It is an Electron app that loads YouTube or YouTube Music in a small, fixed-size window and layers a custom mini-player UI on top. The goal is distraction-free listening: minimal chrome, no comments/notifications, and optional "mini mode" (YouTube only) that hides the full YouTube interface and shows only controls and an audio visualizer. The player is accessible anywhere via a simple global keyboard shortcut (show/hide). Users can switch between YouTube and YouTube Music via a two-button selector injected into the page.
 
 - **Product name:** Amplion
 - **App ID:** `cz.incik.amplion`
@@ -15,10 +15,10 @@
 1. **Main process** (`src/main/`)
    - **main.ts** — Entry point: creates main window, registers IPC, app menu, global shortcuts, handles activate/quit.
    - **windows.ts** — `createMainWindow()` and `createSettingsWindow()`; loads YouTube, sets up `did-finish-load` → injection; preload path: `build/preload/preload.js`.
-   - **inject.ts** — `injectYouTubeAndRenderer()`: injects distraction-free CSS, then React bundle (CSS + JS) from `renderer_dist/`; ensures `#root` exists.
-   - **ipc.ts** — IPC handlers: `resize-window`, `store-get`, `store-set`, `get-current-shortcut`, `set-custom-shortcut`, `reset-shortcut`, `close-settings-window`.
+   - **inject.ts** — `injectYouTubeAndRenderer()`: injects distraction-free CSS, then React bundle (CSS + JS) from `renderer_dist/`; ensures `#root` exists. `injectYouTubeMusicShell()`: injects only the React bundle (no distraction-free CSS) — YouTube Music has its own full UI so CSS stripping is skipped.
+   - **ipc.ts** — IPC handlers: `resize-window`, `store-get`, `store-set`, `get-current-shortcut`, `set-custom-shortcut`, `reset-shortcut`, `close-settings-window`, `switch-service` (loads the correct URL for the chosen service, resizes window to 960×600 for YouTube Music, saves/restores `lastModeBeforeYouTubeMusic`).
    - **shortcuts.ts** — Global shortcut (configurable, default `CommandOrControl+Shift+Z`) and media keys (MediaPlayPause, MediaNextTrack, MediaPreviousTrack) forwarded to renderer via IPC.
-   - **store.ts** — `electron-store` with schema: `windowBounds`, `lastUrl`, `customShortcut`.
+   - **store.ts** — `electron-store` with schema: `windowBounds`, `lastUrl` (deprecated, kept for migration), `lastUrlYouTube`, `lastUrlYouTubeMusic`, `service`, `customShortcut`, `lastMode`, `lastModeBeforeYouTubeMusic`. Exports constants `YOUTUBE_MUSIC_WINDOW_WIDTH` (960) and `YOUTUBE_MUSIC_WINDOW_HEIGHT` (600).
    - **menu.ts** — App menu (macOS/Windows) with Settings (Cmd+,).
    - **Persistence:** `electron-store`. Renderer also uses `lastMode` (mini/full) via store.
    - **macOS:** Close hides the window (music keeps playing); **Windows:** Close quits the app.
@@ -27,7 +27,7 @@
 2. **Preload** (`src/preload/`) — TypeScript, built to `build/preload/preload.js`
    - **index.ts** — Loads api, mediaKeys; exposes API and initializes media key listeners.
    - **api.ts** — `contextBridge.exposeInMainWorld`:
-     - **`window.electronAPI`:** `resizeWindow(w, h)`, `isYouTubeReady()`, `getYouTubeTitle()`, `isVideoPaused()`, `togglePlayback()`, `getVideoDuration()`, `getVideoCurrentTime()`, `clickYouTubeButton(selector)`, and media key listeners: `onMediaPlayPause`, `onMediaNextTrack`, `onMediaPreviousTrack` (each returns cleanup fn).
+     - **`window.electronAPI`:** `resizeWindow(w, h)`, `isYouTubeReady()`, `getYouTubeTitle()`, `isVideoPaused()`, `togglePlayback()`, `getVideoDuration()`, `getVideoCurrentTime()`, `clickYouTubeButton(selector)`, `switchService(service: "youtube" | "youtubeMusic")`, and media key listeners: `onMediaPlayPause`, `onMediaNextTrack`, `onMediaPreviousTrack` (each returns cleanup fn).
      - **`window.amplionAppStore`:** `get(key, defaultValue)`, `set(key, value)` (IPC to main).
    - **mediaKeys.ts** — Registers IPC listeners for `media-play-pause`, `media-next-track`, `media-previous-track` and operates on page DOM (`video`, `.ytp-next-button`, `.ytp-prev-button`).
    - **constants.ts** — YouTube selectors: `YT_VIDEO_SELECTOR`, `YT_NEXT_BUTTON_SELECTOR`, `YT_PREV_BUTTON_SELECTOR`, `YT_TITLE_SELECTORS`, `YT_APP_SELECTOR`.
@@ -61,7 +61,8 @@
 - **YouTube selectors:** App depends on YouTube DOM (e.g. `ytd-app`, `video`, `.ytp-next-button`, `.ytp-prev-button`). YouTube markup changes can break things.
 - **Root element:** Main process inject ensures `#root` exists before running React; React mounts there.
 - **Mini vs full:** In mini mode, window is resized and `ytd-app` hidden via CSS; mini player bar stays in the same document.
-- **Store:** Use `window.amplionAppStore` (not `window.store`). Keys: `windowBounds`, `lastUrl`, `customShortcut`, `lastMode` (mini/full).
+- **Store:** Use `window.amplionAppStore` (not `window.store`). Keys: `windowBounds`, `lastUrl` (deprecated), `lastUrlYouTube`, `lastUrlYouTubeMusic`, `service` (`"youtube"` | `"youtubeMusic"`), `customShortcut`, `lastMode` (mini/full), `lastModeBeforeYouTubeMusic`.
+- **YouTube Music mode:** Switching to `youtubeMusic` forces `lastMode` to `"full"` (mini mode is not supported for YouTube Music); the previous mode is saved in `lastModeBeforeYouTubeMusic` and restored on switching back to YouTube. Window is resized to `YOUTUBE_MUSIC_WINDOW_WIDTH × YOUTUBE_MUSIC_WINDOW_HEIGHT` (960×600).
 - **Preload:** Lives in `src/preload/` (TS) and is built to `build/preload/preload.js`. Main window loads it from `path.join(__dirname, '..', 'preload', 'preload.js')` (relative to `build/main/`).
 - **Settings:** TypeScript + React in `src/settings/`; built by Vite to `renderer_dist/src/settings/index.html`. Preload: `src/settings-preload/index.ts` → `build/settings-preload/settings-preload.js`. IPC: `get-current-shortcut`, `set-custom-shortcut`, `reset-shortcut`, `close-settings-window`.
 - **Vite alias:** `@` → `./src/renderer` (see `vite.config.js`).
@@ -76,7 +77,7 @@
 | Main process   | `src/main/main.ts`, `src/main/windows.ts`, `src/main/inject.ts`, `src/main/ipc.ts`, `src/main/shortcuts.ts`, `src/main/store.ts`, `src/main/menu.ts` |
 | Preload        | `src/preload/index.ts`, `src/preload/api.ts`, `src/preload/constants.ts`, `src/preload/mediaKeys.ts` |
 | Renderer entry | `src/renderer/index.tsx`, `src/renderer/index.html` |
-| App & UI       | `src/renderer/App.tsx`, `src/renderer/components/MiniPlayer.tsx`, `MiniPlayerControls.tsx`, `ToggleButton.tsx`, `AudioVisualizer.tsx`, `PlayTime.tsx`, `MiniPlayerButton.tsx`, `src/renderer/styles/MiniPlayer.css` |
+| App & UI       | `src/renderer/App.tsx`, `src/renderer/components/MiniPlayer.tsx`, `MiniPlayerControls.tsx`, `ToggleButton.tsx`, `AudioVisualizer.tsx`, `PlayTime.tsx`, `MiniPlayerButton.tsx`, `ServiceSwitch.tsx`, `src/renderer/styles/MiniPlayer.css` |
 | Hooks          | `src/renderer/hooks/useDisplayMode.ts`, `useVideoState.ts`, `useVideoTitle.ts` |
 | Utils          | `src/renderer/utils/getAudioContext.ts` |
 | Settings       | `src/settings-preload/index.ts` → `build/settings-preload/settings-preload.js`; `src/settings/index.html`, `main.tsx`, `SettingsApp.tsx`, `styles/Settings.css`, `utils/eventToAccelerator.ts` |
@@ -91,5 +92,6 @@
 - **Main process:** Edit `src/main/*.ts`; keep preload API in sync (`src/preload/api.ts`) so `electronAPI` and `amplionAppStore` match.
 - **IPC:** Add handler in `src/main/ipc.ts`, expose in `src/preload/api.ts` (main) or `src/settings-preload/index.ts` (settings), use in renderer or preload handlers.
 - **Settings edits:** Change React components in `src/settings/`, styles in `src/settings/styles/`; keep `window.settingsAPI` in sync with `src/main/ipc.ts` and `src/settings-preload/index.ts`.
+- **Service switching:** To add/change service behavior, edit `src/main/ipc.ts` (`switch-service` handler), `src/main/inject.ts` (`injectYouTubeMusicShell`), `src/renderer/components/ServiceSwitch.tsx`, and keep `src/main/store.ts` constants in sync.
 - **YouTube breakage:** Update selectors in `src/preload/constants.ts` and `api.ts`; also check injected CSS in `src/main/inject.ts`.
 - **Running:** `bun run dev` for development; `bun run build` for packaged app; output to `dist/`.

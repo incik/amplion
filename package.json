@@ -5,17 +5,14 @@
   "description": "Lightweight ADHD friendly YouTube music player",
   "main": "build/main/main.js",
   "scripts": {
-    "typecheck": "bunx tsc -p tsconfig.main.json --noEmit && bunx tsc -p tsconfig.preload.json --noEmit && bunx tsc -p tsconfig.json --noEmit",
-    "start": "bun run build:main && bun run build:renderer && bun run build:preload && bun run build:settings-preload && electron .",
-    "dev": "bun run build:preload && bun run build:settings-preload && bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
-    "dev:renderer": "VITE_BUILD_MODE=index vite build --mode development && VITE_BUILD_MODE=settings vite build --mode development && bunx concurrently \"VITE_BUILD_MODE=index vite build --mode development --watch\" \"VITE_BUILD_MODE=settings vite build --mode development --watch\"",
+    "start": "bun run build:main && bun run build:renderer && electron .",
+    "dev": "bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
+    "dev:renderer": "vite build --mode development --watch",
     "dev:main": "bunx tsc -p tsconfig.main.json --watch --preserveWatchOutput",
     "dev:electron": "bun scripts/dev-electron.mjs",
     "build:main": "bunx tsc -p tsconfig.main.json",
-    "build:renderer": "VITE_BUILD_MODE=index vite build && VITE_BUILD_MODE=settings vite build",
-    "build:preload": "bunx tsc -p tsconfig.preload.json --noEmit && bun build src/preload/index.ts --outfile=build/preload/preload.js --format=cjs --target=node --external=electron",
-    "build:settings-preload": "bun build src/settings-preload/index.ts --outfile=build/settings-preload/settings-preload.js --format=cjs --target=node --external=electron",
-    "build": "bun run build:main && bun run build:renderer && bun run build:preload && bun run build:settings-preload && electron-builder"
+    "build:renderer": "vite build",
+    "build": "bun run build:main && bun run build:renderer && electron-builder"
   },
   "keywords": [
     "youtube",
@@ -27,10 +24,8 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^20.11.30",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.2",
+    "@types/node": "^20.11.30",
     "concurrently": "^9.2.1",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
@@ -49,9 +44,12 @@
     "appId": "cz.incik.amplion",
     "files": [
       "build/main/**",
-      "build/preload/**",
-      "build/settings-preload/**",
       "renderer_dist/**",
+      "settings.html",
+      "settings-preload.js",
+      "settings-renderer.js",
+      "settings.css",
+      "preload.js",
       "amplion.af",
       "images/**"
     ],

@@ -3,7 +3,12 @@ import type { IpcMainEvent, IpcMainInvokeEvent } from "electron";
 import { ipcMain } from "electron";
 import type Store from "electron-store";
 import type { StoreSchema } from "./store";
-import { DEFAULT_SHORTCUT } from "./store";
+import {
+  DEFAULT_SHORTCUT,
+  type ServiceType,
+  YOUTUBE_MUSIC_WINDOW_HEIGHT,
+  YOUTUBE_MUSIC_WINDOW_WIDTH,
+} from "./store";
 
 export function registerIpcHandlers(
   storeInstance: Store<StoreSchema>,
@@ -86,6 +91,48 @@ export function registerIpcHandlers(
     const win = getSettingsWindow();
     if (win && !win.isDestroyed()) {
       win.close();
+    }
+  });
+
+  ipcMain.on("switch-service", (_event: IpcMainEvent, service: ServiceType) => {
+    console.log("called switch-service", service);
+    const win = getMainWindow();
+    if (service === "youtubeMusic") {
+      // Enforce full display mode for YT Music; remember current mode for when switching back to YouTube
+      const currentMode =
+        (storeInstance.get("lastMode", "full") as "mini" | "full") || "full";
+      storeInstance.set("lastModeBeforeYouTubeMusic", currentMode);
+      storeInstance.set("lastMode", "full");
+    } else {
+      // Restore the mode the user had before switching to YT Music
+      const savedMode = storeInstance.get(
+        "lastModeBeforeYouTubeMusic",
+        "full",
+      ) as "mini" | "full";
+      storeInstance.set("lastMode", savedMode);
+    }
+    storeInstance.set("service", service);
+    const url =
+      service === "youtubeMusic"
+        ? storeInstance.get("lastUrlYouTubeMusic")
+        : storeInstance.get("lastUrlYouTube");
+    if (win && !win.isDestroyed()) {
+      win.webContents.loadURL(url);
+      if (service === "youtubeMusic") {
+        const bounds = win.getBounds();
+        const newY = Math.round(
+          bounds.y + (bounds.height - YOUTUBE_MUSIC_WINDOW_HEIGHT) / 2,
+        );
+        win.setBounds(
+          {
+            x: bounds.x,
+            y: newY,
+            width: YOUTUBE_MUSIC_WINDOW_WIDTH,
+            height: YOUTUBE_MUSIC_WINDOW_HEIGHT,
+          },
+          true,
+        );
+      }
     }
   });
 }
