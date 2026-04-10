@@ -7,11 +7,11 @@
   "scripts": {
     "start": "bun run build:main && bun run build:renderer && electron .",
     "dev": "bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
-    "dev:renderer": "vite build --mode development --watch",
+    "dev:renderer": "VITE_BUILD_MODE=index vite build --mode development --watch",
     "dev:main": "bunx tsc -p tsconfig.main.json --watch --preserveWatchOutput",
     "dev:electron": "bun scripts/dev-electron.mjs",
     "build:main": "bunx tsc -p tsconfig.main.json",
-    "build:renderer": "vite build",
+    "build:renderer": "VITE_BUILD_MODE=index vite build && VITE_BUILD_MODE=settings vite build",
     "build": "bun run build:main && bun run build:renderer && electron-builder"
   },
   "keywords": [
