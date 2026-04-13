@@ -6,12 +6,17 @@ interface ServiceSwitchProps {
 }
 
 export function ServiceSwitch({ currentService, onSwitch }: ServiceSwitchProps) {
+  const handleSwitch = (service: ServiceType) => (e: React.PointerEvent) => {
+    e.stopPropagation();
+    onSwitch(service);
+  };
+
   return (
     <div className="service-switch" role="group" aria-label="Switch between YouTube and YouTube Music">
       <button
         type="button"
         className={`service-switch-btn ${currentService === "youtube" ? "active" : ""}`}
-        onClick={() => onSwitch("youtube")}
+        onPointerDown={handleSwitch("youtube")}
         title="Switch to YouTube"
       >
         YouTube
@@ -19,7 +24,7 @@ export function ServiceSwitch({ currentService, onSwitch }: ServiceSwitchProps) 
       <button
         type="button"
         className={`service-switch-btn ${currentService === "youtubeMusic" ? "active" : ""}`}
-        onClick={() => onSwitch("youtubeMusic")}
+        onPointerDown={handleSwitch("youtubeMusic")}
         title="Switch to YouTube Music"
       >
         YouTube Music

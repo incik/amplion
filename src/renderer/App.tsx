@@ -54,10 +54,13 @@ export default function App() {
 
   if (onYouTubeMusic) {
     return (
-      <ServiceSwitch
-        currentService={currentService}
-        onSwitch={handleSwitchService}
-      />
+      <>
+        <ServiceSwitch
+          currentService={currentService}
+          onSwitch={handleSwitchService}
+        />
+        <style>{`ytmusic-player-bar { bottom: 44px !important; }`}</style>
+      </>
     );
   }
 

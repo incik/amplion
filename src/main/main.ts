@@ -85,6 +85,10 @@ function createWindow() {
     }
   });
 
+  win.webContents.on("will-prevent-unload", (event: Event) => {
+    event.preventDefault();
+  });
+
   win.webContents.on("did-finish-load", () => {
     const url = win.webContents.getURL();
     if (isYouTubeMusicUrl(url)) {
