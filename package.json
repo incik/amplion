@@ -5,14 +5,16 @@
   "description": "Lightweight ADHD friendly YouTube music player",
   "main": "build/main/main.js",
   "scripts": {
-    "start": "bun run build:main && bun run build:renderer && electron .",
-    "dev": "bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:electron\"",
+    "start": "bun run build:main && bun run build:preload && bun run build:renderer && electron .",
+    "dev": "bunx concurrently \"bun run dev:renderer\" \"bun run dev:main\" \"bun run dev:preload\" \"bun run dev:electron\"",
     "dev:renderer": "VITE_BUILD_MODE=index vite build --mode development --watch",
     "dev:main": "bunx tsc -p tsconfig.main.json --watch --preserveWatchOutput",
+    "dev:preload": "bunx concurrently \"bunx esbuild src/preload/index.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=build/preload/preload.js --watch\" \"bunx esbuild src/settings-preload/index.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=build/settings-preload/settings-preload.js --watch\"",
     "dev:electron": "bun scripts/dev-electron.mjs",
     "build:main": "bunx tsc -p tsconfig.main.json",
+    "build:preload": "bunx esbuild src/preload/index.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=build/preload/preload.js && bunx esbuild src/settings-preload/index.ts --bundle --platform=node --target=node18 --external:electron --format=cjs --outfile=build/settings-preload/settings-preload.js",
     "build:renderer": "VITE_BUILD_MODE=index vite build && VITE_BUILD_MODE=settings vite build",
-    "build": "bun run build:main && bun run build:renderer && electron-builder"
+    "build": "bun run build:main && bun run build:preload && bun run build:renderer && electron-builder"
   },
   "keywords": [
     "youtube",
@@ -44,12 +46,9 @@
     "appId": "cz.incik.amplion",
     "files": [
       "build/main/**",
+      "build/preload/**",
+      "build/settings-preload/**",
       "renderer_dist/**",
-      "settings.html",
-      "settings-preload.js",
-      "settings-renderer.js",
-      "settings.css",
-      "preload.js",
       "amplion.af",
       "images/**"
     ],
